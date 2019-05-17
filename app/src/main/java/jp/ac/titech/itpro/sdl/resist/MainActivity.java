@@ -15,6 +15,8 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     private RotationView rotationView;
     private SensorManager manager;
     private Sensor gyroscope;
+    private double angle;
+    private float prevTimestamp;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +41,7 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     protected void onResume() {
         super.onResume();
+        initAngle();
         Log.d(TAG, "onResume");
         manager.registerListener(this, gyroscope, SensorManager.SENSOR_DELAY_FASTEST);
     }
@@ -53,12 +56,22 @@ public class MainActivity extends AppCompatActivity implements SensorEventListen
     @Override
     public void onSensorChanged(SensorEvent event) {
         float omegaZ = event.values[2];  // z-axis angular velocity (rad/sec)
-        // TODO: calculate right direction that cancels the rotation
-        rotationView.setDirection(omegaZ);
+        long timestamp = event.timestamp;
+        if (prevTimestamp != -1) {
+            double sec = (timestamp - prevTimestamp) * 1e-9;
+            angle += omegaZ * sec;
+        }
+        rotationView.setDirection(angle);
+        prevTimestamp = timestamp;
     }
 
     @Override
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         Log.d(TAG, "onAccuracyChanged: accuracy=" + accuracy);
+    }
+
+    private void initAngle() {
+        angle = 0;
+        prevTimestamp = -1;
     }
 }
